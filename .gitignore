@@ -1,0 +1,10 @@
+model/__pycache__
+out
+website/
+docs-minimind/
+dataset
+images
+
+
+*.pth
+
