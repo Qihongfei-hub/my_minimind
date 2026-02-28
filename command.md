@@ -46,3 +46,12 @@ conda activate my_project_env
 
 #
 等效批大小 = batch_size × accumulation_steps × num_gpus
+
+
+#
+python eval_llm.py --weight pretrain
+python eval_llm.py --weight full_sft # 或 pretrain/dpo/ppo/grpo...
+
+
+#SFT
+python trainer/train_full_sft.py --data_path ../dataset/your_custom_data.jsonl --batch_size 16 --learning_rate 1e-5 --epochs 5

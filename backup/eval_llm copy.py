@@ -36,15 +36,12 @@ def main():
     parser.add_argument('--weight', default='full_sft', type=str, help="权重名称前缀（pretrain, full_sft, rlhf, reason, ppo_actor, grpo, spo）")
     parser.add_argument('--lora_weight', default='None', type=str, help="LoRA权重名称（None表示不使用，可选：lora_identity, lora_medical）")
     parser.add_argument('--hidden_size', default=512, type=int, help="隐藏层维度（512=Small-26M, 640=MoE-145M, 768=Base-104M）")
-    parser.add_argument('--num_hidden_layers', default=8, type=int, help="隐藏层数量（Small/MoE=8, Base=16）") #qhf
+    parser.add_argument('--num_hidden_layers', default=8, type=int, help="隐藏层数量（Small/MoE=8, Base=16）")
     parser.add_argument('--use_moe', default=0, type=int, choices=[0, 1], help="是否使用MoE架构（0=否，1=是）")
     parser.add_argument('--inference_rope_scaling', default=False, action='store_true', help="启用RoPE位置编码外推（4倍，仅解决位置编码问题）")
-    parser.add_argument('--max_new_tokens', default=512, type=int, help="最大生成长度（注意：并非模型实际长文本能力）")
-    #parser.add_argument('--temperature', default=0.85, type=float, help="生成温度，控制随机性（0-1，越大越随机）")
-    parser.add_argument('--temperature', default=0.7, type=float, help="生成温度，控制随机性（0-1，越大越随机）")
-    #parser.add_argument('--top_p', default=0.85, type=float, help="nucleus采样阈值（0-1）")
-    parser.add_argument('--top_p', default=0.8, type=float, help="nucleus采样阈值（0-1）")
-    parser.add_argument('--repetition_penalty', default=1.15, type=float, help="重复惩罚（>1.0为惩罚，越大惩罚越重）") # qhf
+    parser.add_argument('--max_new_tokens', default=8192, type=int, help="最大生成长度（注意：并非模型实际长文本能力）")
+    parser.add_argument('--temperature', default=0.85, type=float, help="生成温度，控制随机性（0-1，越大越随机）")
+    parser.add_argument('--top_p', default=0.85, type=float, help="nucleus采样阈值（0-1）")
     parser.add_argument('--historys', default=0, type=int, help="携带历史对话轮数（需为偶数，0表示不携带历史）")
     parser.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu', type=str, help="运行设备")
     args = parser.parse_args()
@@ -53,13 +50,11 @@ def main():
         '你有什么特长？',
         '为什么天空是蓝色的',
         '请用Python写一个计算斐波那契数列的函数',
-        '解释一下"光合作用"的基本过程?',
-        '如果明天下雨，我应该如何出门?',
-        '比较一下猫和狗作为宠物的优缺点?',
-        '解释什么是机器学习?',
-        '中国的四大名著有哪些?',
-        # '介绍下特朗普的个人经历?',
-        '推荐一些中国的美食?'
+        '解释一下"光合作用"的基本过程',
+        '如果明天下雨，我应该如何出门',
+        '比较一下猫和狗作为宠物的优缺点',
+        '解释什么是机器学习',
+        '推荐一些中国的美食'
     ]
     
     conversation = []
@@ -84,7 +79,7 @@ def main():
             inputs=inputs["input_ids"], attention_mask=inputs["attention_mask"],
             max_new_tokens=args.max_new_tokens, do_sample=True, streamer=streamer,
             pad_token_id=tokenizer.pad_token_id, eos_token_id=tokenizer.eos_token_id,
-            top_p=args.top_p, temperature=args.temperature, repetition_penalty=args.repetition_penalty
+            top_p=args.top_p, temperature=args.temperature, repetition_penalty=1.0
         )
         response = tokenizer.decode(generated_ids[0][len(inputs["input_ids"][0]):], skip_special_tokens=True)
         conversation.append({"role": "assistant", "content": response})

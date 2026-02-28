@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI问答质量评分系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                        success: '#22c55e',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        info: '#0ea5e9',
+                        light: '#f8fafc',
+                        dark: '#1e293b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .glass {
+                background: rgba(255, 255, 255, 0.25);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+            }
+            .card-shadow {
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            }
+            .hover-scale {
+                transition: transform 0.3s ease;
+            }
+            .hover-scale:hover {
+                transform: scale(1.02);
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="gradient-bg text-white py-8 shadow-lg">
+        <div class="container mx-auto px-4">
+            <h1 class="text-4xl font-bold text-center mb-2">AI问答质量评分系统</h1>
+            <p class="text-center text-lg opacity-90">多维度评估AI回答的质量与准确性</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 总体评分概览 -->
+        <section class="mb-12">
+            <div class="glass rounded-2xl p-6 card-shadow">
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">总体评分概览</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <canvas id="radarChart" width="400" height="400"></canvas>
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <div class="mb-6">
+                            <h3 class="text-xl font-semibold mb-2 text-gray-700">平均分: <span id="averageScore" class="text-3xl font-bold text-primary">0</span>/10</h3>
+                            <div class="w-full bg-gray-200 rounded-full h-4">
+                                <div id="averageBar" class="bg-primary h-4 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">准确性</span>
+                                <div class="flex items-center">
+                                    <span id="accuracyScore" class="font-semibold mr-2">0</span>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2">
+                                        <div id="accuracyBar" class="bg-success h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">完整性</span>
+                                <div class="flex items-center">
+                                    <span id="completenessScore" class="font-semibold mr-2">0</span>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2">
+                                        <div id="completenessBar" class="bg-info h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">相关性</span>
+                                <div class="flex items-center">
+                                    <span id="relevanceScore" class="font-semibold mr-2">0</span>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2">
+                                        <div id="relevanceBar" class="bg-warning h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-700">清晰度</span>
+                                <div class="flex items-center">
+                                    <span id="clarityScore" class="font-semibold mr-2">0</span>
+                                    <div class="w-24 bg-gray-200 rounded-full h-2">
+                                        <div id="clarityBar" class="bg-secondary h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 详细评分列表 -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">详细评分分析</h2>
+            <div id="qaList" class="space-y-6">
+                <!-- QA项将通过JavaScript动态生成 -->
+            </div>
+        </section>
+
+        <!-- 评分说明 -->
+        <section class="mb-8">
+            <div class="glass rounded-2xl p-6 card-shadow">
+                <h2 class="text-2xl font-bold mb-4 text-center text-gray-800">评分标准说明</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <h3 class="font-semibold text-lg mb-2 text-success flex items-center">
+                            <i class="fa fa-check-circle mr-2"></i>准确性
+                        </h3>
+                        <p class="text-gray-600">回答内容的事实准确性，是否存在错误信息或误导性内容。</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <h3 class="font-semibold text-lg mb-2 text-info flex items-center">
+                            <i class="fa fa-list-ul mr-2"></i>完整性
+                        </h3>
+                        <p class="text-gray-600">回答是否全面覆盖了问题的各个方面，是否有重要信息遗漏。</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <h3 class="font-semibold text-lg mb-2 text-warning flex items-center">
+                            <i class="fa fa-link mr-2"></i>相关性
+                        </h3>
+                        <p class="text-gray-600">回答内容与问题的相关程度，是否偏离主题或包含无关信息。</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <h3 class="font-semibold text-lg mb-2 text-secondary flex items-center">
+                            <i class="fa fa-comment mr-2"></i>清晰度
+                        </h3>
+                        <p class="text-gray-600">回答的表达是否清晰易懂，逻辑结构是否合理，语言是否流畅。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2024 AI问答质量评分系统 | 基于多维度评估模型</p>
+        </div>
+    </footer>
+
+    <script>
+        // QA数据
+        const qaData = [
+            {
+                question: "你有什么特长？",
+                answer: "我是一台机器人，没有具体的特性。但是我可以提供一些关于语言学方面的信息，比如语言的规则、词汇、语法等。",
+                scores: {
+                    accuracy: 6,
+                    completeness: 5,
+                    relevance: 7,
+                    clarity: 6
+                },
+                analysis: "回答基本符合AI助手的定位，但表述较为生硬，对'特长'的理解不够准确，内容相对简单。"
+            },
+            {
+                question: "为什么天空是蓝色的",
+                answer: "天空是蓝色的是因为大气中的氮气、氧气等分子会散射太阳光中的蓝色光，使我们看不到蓝色的天空。当阳光照射在空气中时，它会被大气层散射掉，从而使得天空呈现出蓝色。这是由于大气中的氮气和氧气分子对光线的散射作用产生了不同波长的光线，所以我们看到的天空是蓝色的。此外，天空的颜色也是蓝色调的一个重要因素。当太阳落山后，天空的颜色也会变成橙色或红色，这会导致天空呈现出橙色或黄色。这些颜色也反映了天空的颜色变化。",
+                scores: {
+                    accuracy: 4,
+                    completeness: 6,
+                    relevance: 8,
+                    clarity: 3
+                },
+                analysis: "回答包含了瑞利散射的基本原理，但存在逻辑混乱和错误表述（'使我们看不到蓝色的天空'），整体表达不够清晰。"
+            },
+            {
+                question: "请用Python写一个计算斐波那契数列的函数",
+                answer: "我是AI语言模型，无法使用Python编写程序来实现此任务。但是，如果您需要使用Python编写函数来计算斐波那契数列，可以使用内置的subble库，例如summary()、closeq等。这些工具可以用于计算斐波那契数列的斐波那契数列。",
+                scores: {
+                    accuracy: 2,
+                    completeness: 2,
+                    relevance: 3,
+                    clarity: 4
+                },
+                analysis: "回答存在严重错误，声称无法编写Python代码且推荐了不存在的'subble'库和函数，完全不符合用户需求。"
+            },
+            {
+                question: "解释一下\"光合作用\"的基本过程?",
+                answer: "光合作用是指植物通过光能将二氧化碳和水转化为有机物质的过程。它是维持生态系统平衡的重要过程，也是维持地球生态平衡的重要因素之一。",
+                scores: {
+                    accuracy: 7,
+                    completeness: 3,
+                    relevance: 8,
+                    clarity: 6
+                },
+                analysis: "回答基本准确但过于简略，没有解释光合作用的具体过程、场所和产物，缺乏必要的科学细节。"
+            },
+            {
+                question: "如果明天下雨，我应该如何出门?",
+                answer: "如果你想出门，建议你穿上一件轻便的外套或长袖衣服，带上雨伞或防水鞋子。另外，避免在室内外活动，如看电影、读书或者做一些手工艺品等。",
+                scores: {
+                    accuracy: 5,
+                    completeness: 4,
+                    relevance: 6,
+                    clarity: 5
+                },
+                analysis: "回答提供了基本的防雨建议，但'避免在室内外活动'的表述矛盾，且建议的替代活动（看电影、读书）都是室内活动，逻辑不够清晰。"
+            },
+            {
+                question: "比较一下猫和狗作为宠物的优缺点?",
+                answer: "猫和狗都是常见的宠物，它们有很多优点。例如，猫通常比狗更独立，更容易照顾；而狗则需要更多的锻炼和社交化，因为它们需要更多的运动和活动空间。此外，猫通常比狗更安静、更独立，更适合在家里生活。然而，与狗相比，猫需要更多的空间来适应环境。",
+                scores: {
+                    accuracy: 7,
+                    completeness: 6,
+                    relevance: 8,
+                    clarity: 6
+                },
+                analysis: "回答基本比较了猫和狗的特点，但存在重复（多次提到猫的独立性）和矛盾（先说猫更适合家里生活，后说猫需要更多空间）的问题。"
+            },
+            {
+                question: "解释什么是机器学习?",
+                answer: "机器学习是一种人工智能的分支，它利用算法和统计模型来让计算机从数据中学习并自动改进性能。它可以通过分析数据和模式识别来自动化地执行任务，而无需明确的编程指令。机器学习可以用于各种应用领域，如自然语言处理、图像识别、预测和推荐系统等。",
+                scores: {
+                    accuracy: 8,
+                    completeness: 7,
+                    relevance: 10,
+                    clarity: 8
+                },
+                analysis: "回答准确清晰地解释了机器学习的定义、原理和应用领域，内容完整且逻辑连贯，是质量较高的回答。"
+            },
+            {
+                question: "中国的四大名著有哪些?",
+                answer: "这个问题的答案是：前两本书，第一本就是《红楼梦》，第二本是《西游记》，第三本是《水浒传》，第四本是《三国演义》，第五本是《红楼梦》。虽然这些作品都是文学作品，但它们的创作灵感来自于中国古代文学的历史和宗教。",
+                scores: {
+                    accuracy: 6,
+                    completeness: 5,
+                    relevance: 7,
+                    clarity: 4
+                },
+                analysis: "回答列出了正确的四大名著，但表述混乱（提到了'第五本'且重复提到《红楼梦》），解释部分也不够准确。"
+            },
+            {
+                question: "推荐一些中国的美食?",
+                answer: "1. 麻婆豆腐：使用豆腐、辣椒、花椒等材料烹制，口感鲜嫩。2. 糖醋里脊：选用新鲜的红糖、醋、白糖和水制作而成，口感清爽。3. 麻婆豆腐：以豆腐为主要原料，加入香料、酱油、姜末等调味料后炖煮，口感麻辣可口。4. 糖醋排骨：选用排骨、葱姜蒜等食材，肉质软糯，入味后入味，入口即化。5. 麻婆豆腐：以豆腐为主要原料，口感鲜美，汤汁浓郁，是川菜中的经典之一。6. 干煸四季豆：选用新鲜的五花肉，配上一杯酸甜可口的口味，非常适合喜欢吃辣的人食用。",
+                scores: {
+                    accuracy: 4,
+                    completeness: 3,
+                    relevance: 7,
+                    clarity: 3
+                },
+                analysis: "回答推荐了中国美食，但存在严重的重复（三次推荐麻婆豆腐）和错误（干煸四季豆的描述与实际不符），内容组织混乱。"
+            }
+        ];
+
+        // 计算平均分
+        function calculateAverageScores() {
+            let totalAccuracy = 0;
+            let totalCompleteness = 0;
+            let totalRelevance = 0;
+            let totalClarity = 0;
+            let totalOverall = 0;
+
+            qaData.forEach(qa => {
+                totalAccuracy += qa.scores.accuracy;
+                totalCompleteness += qa.scores.completeness;
+                totalRelevance += qa.scores.relevance;
+                totalClarity += qa.scores.clarity;
+                
+                // 计算每个回答的总分（四项的平均值）
+                const overall = (qa.scores.accuracy + qa.scores.completeness + 
+                                qa.scores.relevance + qa.scores.clarity) / 4;
+                totalOverall += overall;
+            });
+
+            const count = qaData.length;
+            return {
+                accuracy: totalAccuracy / count,
+                completeness: totalCompleteness / count,
+                relevance: totalRelevance / count,
+                clarity: totalClarity / count,
+                overall: totalOverall / count
+            };
+        }
+
+        // 渲染雷达图
+        function renderRadarChart() {
+            const avgScores = calculateAverageScores();
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['准确性', '完整性', '相关性', '清晰度'],
+                    datasets: [{
+                        label: '平均评分',
+                        data: [
+                            avgScores.accuracy,
+                            avgScores.completeness,
+                            avgScores.relevance,
+                            avgScores.clarity
+                        ],
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 10,
+                            ticks: {
+                                stepSize: 2
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        // 更新总体评分显示
+        function updateOverallScores() {
+            const avgScores = calculateAverageScores();
+            
+            // 更新平均分
+            const averageScoreEl = document.getElementById('averageScore');
+            const averageBarEl = document.getElementById('averageBar');
+            animateValue(averageScoreEl, 0, avgScores.overall, 1500);
+            setTimeout(() => {
+                averageBarEl.style.width = `${(avgScores.overall / 10) * 100}%`;
+            }, 300);
+            
+            // 更新各项指标
+            updateScoreBar('accuracy', avgScores.accuracy);
+            updateScoreBar('completeness', avgScores.completeness);
+            updateScoreBar('relevance', avgScores.relevance);
+            updateScoreBar('clarity', avgScores.clarity);
+        }
+
+        // 更新单项评分条
+        function updateScoreBar(type, score) {
+            const scoreEl = document.getElementById(`${type}Score`);
+            const barEl = document.getElementById(`${type}Bar`);
+            
+            animateValue(scoreEl, 0, score, 1500);
+            setTimeout(() => {
+                barEl.style.width = `${(score / 10) * 100}%`;
+            }, 300);
+        }
+
+        // 数字动画
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = progress * (end - start) + start;
+                element.textContent = value.toFixed(1);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // 渲染QA列表
+        function renderQAList() {
+            const qaListEl = document.getElementById('qaList');
+            
+            qaData.forEach((qa, index) => {
+                const overall = (qa.scores.accuracy + qa.scores.completeness + 
+                                qa.scores.relevance + qa.scores.clarity) / 4;
+                
+                const qaItem = document.createElement('div');
+                qaItem.className = 'glass rounded-xl p-6 card-shadow hover-scale';
+                qaItem.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">
+                                <span class="text-primary">#${index + 1}</span> ${qa.question}
+                            </h3>
+                            <div class="bg-white rounded-lg p-4 mb-4">
+                                <p class="text-gray-700">${qa.answer}</p>
+                            </div>
+                            <div class="bg-gray-100 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-800 mb-2">评分分析:</h4>
+                                <p class="text-gray-600">${qa.analysis}</p>
+                            </div>
+                        </div>
+                        <div class="ml-6 flex flex-col items-center">
+                            <div class="text-center mb-4">
+                                <div class="text-3xl font-bold text-primary mb-1">${overall.toFixed(1)}</div>
+                                <div class="text-sm text-gray-500">总分</div>
+                            </div>
+                            <div class="space-y-3 w-full">
+                                <div class="flex items-center">
+                                    <span class="w-20 text-sm text-gray-600">准确性:</span>
+                                    <div class="flex-1 bg-gray-200 rounded-full h-2 ml-2">
+                                        <div class="bg-success h-2 rounded-full" style="width: ${(qa.scores.accuracy / 10) * 100}%"></div>
+                                    </div>
+                                    <span class="w-6 text-right text-sm font-medium ml-2">${qa.scores.accuracy}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-20 text-sm text-gray-600">完整性:</span>
+                                    <div class="flex-1 bg-gray-200 rounded-full h-2 ml-2">
+                                        <div class="bg-info h-2 rounded-full" style="width: ${(qa.scores.completeness / 10) * 100}%"></div>
+                                    </div>
+                                    <span class="w-6 text-right text-sm font-medium ml-2">${qa.scores.completeness}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-20 text-sm text-gray-600">相关性:</span>
+                                    <div class="flex-1 bg-gray-200 rounded-full h-2 ml-2">
+                                        <div class="bg-warning h-2 rounded-full" style="width: ${(qa.scores.relevance / 10) * 100}%"></div>
+                                    </div>
+                                    <span class="w-6 text-right text-sm font-medium ml-2">${qa.scores.relevance}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-20 text-sm text-gray-600">清晰度:</span>
+                                    <div class="flex-1 bg-gray-200 rounded-full h-2 ml-2">
+                                        <div class="bg-secondary h-2 rounded-full" style="width: ${(qa.scores.clarity / 10) * 100}%"></div>
+                                    </div>
+                                    <span class="w-6 text-right text-sm font-medium ml-2">${qa.scores.clarity}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                qaListEl.appendChild(qaItem);
+            });
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderRadarChart();
+            updateOverallScores();
+            renderQAList();
+            
+            // 添加页面加载动画
+            document.body.classList.add('loaded');
+        });
+    </script>
+</body>
+</html>
