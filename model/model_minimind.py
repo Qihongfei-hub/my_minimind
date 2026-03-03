@@ -14,12 +14,12 @@ class MiniMindConfig(PretrainedConfig):
             bos_token_id: int = 1,
             eos_token_id: int = 2,
             hidden_act: str = 'silu',
-            hidden_size: int = 512,   
+            hidden_size: int = 256,   #qhf 
             intermediate_size: int = None,
             max_position_embeddings: int = 32768,
             num_attention_heads: int = 16,   # change from 8->16
-            num_hidden_layers: int = 12, #from 8 to 12
             num_key_value_heads: int = 8,    #change from 2 to 4  to 8
+            num_hidden_layers: int = 24,    #qhf
             vocab_size: int = 6400,
             rms_norm_eps: float = 1e-05,
             rope_theta: int = 1000000.0,
