@@ -41,11 +41,10 @@ def main():
     parser.add_argument('--inference_rope_scaling', default=False, action='store_true', help="启用RoPE位置编码外推（4倍，仅解决位置编码问题）")
     parser.add_argument('--max_new_tokens', default=512, type=int, help="最大生成长度（注意：并非模型实际长文本能力）")
     #parser.add_argument('--temperature', default=0.85, type=float, help="生成温度，控制随机性（0-1，越大越随机）")
-    parser.add_argument('--temperature', default=0.85, type=float, help="生成温度，控制随机性（0+，越大越随机，1为标准采样）")
+    parser.add_argument('--temperature', default=0.85, type=float, help="生成温度，控制随机性（0-1，越大越随机）")
     #parser.add_argument('--top_p', default=0.85, type=float, help="nucleus采样阈值（0-1）")
     parser.add_argument('--top_p', default=0.85, type=float, help="nucleus采样阈值（0-1）")
-    parser.add_argument('--repetition_penalty', default=1.15, type=float, help="重复惩罚（>1.0为惩罚，越大惩罚越重）") # qhf
-    parser.add_argument('--top_k', default=20, type=int, help="top_k采样，控制候选词数量")
+    parser.add_argument('--repetition_penalty', default=1.05, type=float, help="重复惩罚（>1.0为惩罚，越大惩罚越重）") # qhf
     parser.add_argument('--historys', default=0, type=int, help="携带历史对话轮数（需为偶数，0表示不携带历史）")
     parser.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu', type=str, help="运行设备")
     args = parser.parse_args()
@@ -85,8 +84,7 @@ def main():
             inputs=inputs["input_ids"], attention_mask=inputs["attention_mask"],
             max_new_tokens=args.max_new_tokens, do_sample=True, streamer=streamer,
             pad_token_id=tokenizer.pad_token_id, eos_token_id=tokenizer.eos_token_id,
-            top_p=args.top_p, temperature=args.temperature, repetition_penalty=args.repetition_penalty,
-            top_k=args.top_k
+            top_p=args.top_p, temperature=args.temperature, repetition_penalty=args.repetition_penalty
         )
         response = tokenizer.decode(generated_ids[0][len(inputs["input_ids"][0]):], skip_special_tokens=True)
         conversation.append({"role": "assistant", "content": response})

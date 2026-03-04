@@ -19,7 +19,7 @@ class MiniMindConfig(PretrainedConfig):
             max_position_embeddings: int = 32768,
             num_attention_heads: int = 16,   # change from 8->16
             num_key_value_heads: int = 8,    #change from 2 to 4  to 8
-            num_hidden_layers: int = 24,    #qhf
+            num_hidden_layers: int = 12,    #qhf
             vocab_size: int = 6400,
             rms_norm_eps: float = 1e-05,
             rope_theta: int = 1000000.0,
